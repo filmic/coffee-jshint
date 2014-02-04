@@ -33,13 +33,16 @@ hintFiles = (paths, config, log) ->
       return []
     errors = hint source, options, buildTrueObj config.globals
     if log and errors.length > 0
-      console.log "--------------------------------"
       console.log formatErrors path, errors
     errors
 
 hint = (coffeeSource, options, globals) ->
   csOptions = sourceMap: true, filename: "doesn't matter"
-  {js, v3SourceMap, sourceMap} = CoffeeScript.compile coffeeSource.toString(), csOptions
+  # Replace tabs with spaces in multiline comments
+  # to avoid jshint 'mixed spaces and tabs' warnings
+  coffeeSource = coffeeSource.toString().replace /(^\s*###)([\s\S]*?)(###)/gm, (match, p1, p2, p3) ->
+    p1 + p2.replace(/\t/gm, '  ') + p3
+  {js, v3SourceMap, sourceMap} = CoffeeScript.compile coffeeSource, csOptions
   if jshint js, options, globals
     []
   else if not jshint.errors?
